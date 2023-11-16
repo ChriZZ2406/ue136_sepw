@@ -1,0 +1,15 @@
+- hosts: prometheus
+  become: yes
+  tasks:
+    - name: Kopieren der aktualisierten Prometheus Konfigurationsdatei
+      copy:
+        src: "/mnt/c/Users/chris/OneDrive/Desktop/Techstarter Kurs/Ü133 - Prometheus - Alerting/prometheus.yml"
+        dest: "/etc/prometheus/prometheus.yml"
+        owner: prometheus
+        group: prometheus
+        mode: '0644'
+
+    - name: Neustart des Prometheus Dienstes
+      systemd:
+        name: prometheus
+        state: restarted

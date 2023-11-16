@@ -1,0 +1,18 @@
+global:
+  resolve_timeout: 5m  # Duration after which an alert is considered resolved if it hasn't been firing
+
+route:
+  group_by: ['alertname']  # Group alerts by alert name
+  group_wait: 10s         # Time to wait before sending initial notification
+  group_interval: 10s     # Time to wait before sending a notification about new alerts added to a group
+  repeat_interval: 1h     # Time to wait before sending a notification again if it has already been sent
+  receiver: 'aws-sns'     # Default receiver
+
+receivers:
+- name: 'aws-sns'
+  sns_configs:
+  - api_url: 'https://sns.eu-central-1.amazonaws.com'
+    sigv4:
+      region: 'eu-central-1'
+    topic_arn: 'arn:aws:sns:eu-central-1:875454170451:ue133_alerting_2'
+    send_resolved: true   # Send notification when an alert resolves

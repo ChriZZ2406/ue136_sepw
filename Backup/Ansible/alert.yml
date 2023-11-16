@@ -1,0 +1,68 @@
+- hosts: prometheus
+  become: yes
+  tasks:
+    - name: Download Alertmanager
+      get_url:
+        url: "https://github.com/prometheus/alertmanager/releases/download/v0.22.2/alertmanager-0.22.2.linux-amd64.tar.gz"
+        dest: "/tmp/alertmanager.tar.gz"
+
+    - name: Extract Alertmanager tarball
+      unarchive:
+        src: "/tmp/alertmanager.tar.gz"
+        dest: "/usr/local/bin"
+        remote_src: yes
+        extra_opts: ['--strip-components=1']
+
+    - name: Create Alertmanager user
+      user:
+        name: alertmanager
+        shell: /sbin/nologin
+        createhome: no
+
+    - name: Create directories for Alertmanager
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: alertmanager
+      loop:
+        - "/etc/alertmanager"
+        - "/var/lib/alertmanager"
+
+    - name: Deploy Alertmanager configuration
+      copy:
+        src: alertmanager.yml
+        dest: /etc/alertmanager/alertmanager.yml
+        owner: alertmanager
+
+    - name: Create Alertmanager systemd service file
+      copy:
+        content: |
+          [Unit]
+          Description=Alertmanager
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User=alertmanager
+          Group=alertmanager
+          Type=simple
+          ExecStart=/usr/local/bin/alertmanager \
+            --config.file=/etc/alertmanager/alertmanager.yml \
+            --storage.path=/var/lib/alertmanager/
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/alertmanager.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reload systemd to apply new service
+      systemd:
+        daemon_reload: yes
+
+    - name: Start and enable Alertmanager service
+      systemd:
+        name: alertmanager
+        state: started
+        enabled: yes
